@@ -14,6 +14,8 @@ type FileOptions struct {
 	defaultFileMode os.FileMode
 	fileMode        os.FileMode
 	keepFileMode    bool
+	testStuckTempFile	bool
+	stuckTempFileReportFn func(string)
 }
 
 // Option functions modify FileOptions.
@@ -43,6 +45,14 @@ func KeepFileMode(keep bool) Option {
 	}
 }
 
+// StuckTempFileReport sets a callback to call in case removal of the temporary
+// file failed.  The callback is passed the filename.
+func StuckTempFileReport(fn func(string)) Option {
+	return func(opts *FileOptions) {
+		opts.stuckTempFileReportFn = fn
+	}
+}
+
 // WriteFile atomically writes the contents of r to the specified filepath.  If
 // an error occurs, the target file is guaranteed to be either fully written, or
 // not written at all.  WriteFile overwrites any file that exists at the
@@ -69,16 +79,28 @@ func WriteFile(filename string, r io.Reader, opts ...Option) (err error) {
 	if err != nil {
 		return fmt.Errorf("cannot create temp file: %v", err)
 	}
+	name := f.Name()
 	defer func() {
 		if err != nil {
-			// Don't leave the temp file lying around on error.
-			_ = os.Remove(f.Name()) // yes, ignore the error, not much we can do about it.
+			// Don't leave the temp file lying around on error except for testing.
+			if !fopts.testStuckTempFile {
+				err = os.Remove(name)
+			}
+			// other than reporting, there's not much we can do about an error here.
+			if err != nil && fopts.stuckTempFileReportFn != nil {
+				fopts.stuckTempFileReportFn(name)
+			}
 		}
 	}()
 	// ensure we always close f. Note that this does not conflict with  the
 	// close below, as close is idempotent.
 	defer f.Close()
-	name := f.Name()
+	// code-path to test stuck temp files
+	if fopts.testStuckTempFile {
+		// set err to trigger defer handler
+		err = fmt.Errorf("stopped after creating temp file for testing: %q", name)
+		return err
+	}
 	if _, err := io.Copy(f, r); err != nil {
 		return fmt.Errorf("cannot write data to tempfile %q: %v", name, err)
 	}

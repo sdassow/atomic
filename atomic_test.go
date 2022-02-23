@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+func testStuckTempFile(stuck bool) Option {
+        return func(opts *FileOptions) {
+                opts.testStuckTempFile = stuck
+        }
+}
+
 func TestWriteFile(t *testing.T) {
 	file := "foo.txt"
 	content := bytes.NewBufferString("foo")
@@ -79,5 +85,29 @@ func TestWriteFileMode(t *testing.T) {
 	}
 	if fi.Mode() != 0644 {
 		t.Errorf("File mode not correct: %v", fi.Mode())
+	}
+}
+
+func TestWriteFileStuckTempFileReport(t *testing.T) {
+	file := "moo.txt"
+	tmpfile := ""
+	content := bytes.NewBufferString("foo")
+	defer func() { _ = os.Remove(file) }()
+	err := WriteFile(file, content, testStuckTempFile(true), StuckTempFileReport(func(fname string) { tmpfile = fname } ))
+	if err == nil {
+		t.Errorf("Write was expected to fail but succeeded")
+	}
+	if tmpfile == "" {
+		t.Errorf("Temporary file name was expected to be reported")
+	}
+	fi, err := os.Stat(tmpfile)
+	if err != nil {
+		t.Errorf("Failed to stat file: %q: %v", file, err)
+	}
+	if fi.Mode() != 0600 {
+		t.Errorf("File mode not correct")
+	}
+	if err := os.Remove(tmpfile); err != nil {
+		t.Errorf("Really failed to remove temp file: %q: %v", tmpfile, err)
 	}
 }
