@@ -2,7 +2,7 @@
 
 Go package for atomic file writing
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/natefinch/atomic.svg)](https://pkg.go.dev/github.com/natefinch/atomic)
+[![Go Reference](https://pkg.go.dev/badge/github.com/sdassow/atomic.svg)](https://pkg.go.dev/github.com/sdassow/atomic)
 
 By default, writing to a file in go (and generally any language) can fail
 partway through... you then have a partially written file, which probably was
@@ -43,7 +43,7 @@ default configuration for the target file.
 import (
 	"strings"
 
-	"github.com/natefinch/atomic"
+	"github.com/sdassow/atomic"
 )
 
 func main() {

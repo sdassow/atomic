@@ -1,3 +1,3 @@
-module github.com/natefinch/atomic
+module github.com/sdassow/atomic
 
 go 1.12
