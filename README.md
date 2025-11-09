@@ -1,3 +1,5 @@
+NOTICE: hard forked and continuing development on Codeberg: https://codeberg.org/sdassow/atomic
+
 # atomic
 
 Go package for atomic file writing
